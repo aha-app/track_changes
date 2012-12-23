@@ -1,4 +1,5 @@
 require 'diff_match_patch'
+require 'track_changes/html'
 
 module TrackChanges
   
@@ -8,10 +9,6 @@ module TrackChanges
   
   class Tracker
     attr_reader :versions
-    # Non-overlapping, contiguous, segments in the text, each of which tracks
-    # the original of a portion of the text, or a zero-length segment that 
-    # tracks the removal of a portion of the text. Stored in position order.
-    attr_reader :segments
     
     def initialize
       @versions = []
@@ -24,20 +21,35 @@ module TrackChanges
       @versions << version      
     end
     
-    def to_s
+    # Non-overlapping, contiguous, segments in the text, each of which tracks
+    # the original of a portion of the text, or a zero-length segment that 
+    # tracks the removal of a portion of the text. Stored in position order.
+    def segments
       text = @versions.last.text
-      s = @segments.collect do |segment|
+      @segments.each do |segment|
         case segment.type
         when Segment::SAME
-          t = text[0,segment.length]
+          segment.text = text[0,segment.length]
           text = text[segment.length,text.length]
-          "SAME:#{t}:#{segment.version.object}"
+        when Segment::DELETE
+          segment.text = ""
+        when Segment::INSERT
+          segment.text = text[0,segment.length]
+          text = text[segment.length,text.length]
+        end
+      end
+      @segments
+    end
+    
+    def to_s
+      s = segments.collect do |segment|
+        case segment.type
+        when Segment::SAME
+          "SAME:#{segment.text}:#{segment.version.object}"
         when Segment::DELETE
           "DELETE:#{segment.deleted_text}:#{segment.version.object}"
         when Segment::INSERT
-          t = text[0,segment.length]
-          text = text[segment.length,text.length]
-          "INSERT:#{t}:#{segment.version.object}"
+          "INSERT:#{segment.text}:#{segment.version.object}"
         end
       end
       s.collect do |segment|
@@ -178,10 +190,10 @@ module TrackChanges
     attr_reader :type
     attr_accessor :length
     attr_accessor :deleted_text
+    attr_accessor :text
     
     def initialize(type, version, length, deleted_text = nil)
       @type, @version, @length, @deleted_text = type, version, length, deleted_text
-      puts "OBJECT: #{version.object}"
     end
     
   

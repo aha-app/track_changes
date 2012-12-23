@@ -1,3 +1,6 @@
+#!/bin/env ruby
+# encoding: utf-8
+
 require 'spec_helper'
 
 describe TrackChanges do
@@ -99,5 +102,54 @@ describe TrackChanges do
       @tracker.to_s.should == "SAME:text:1,DELETE: 1:4,DELETE: 2:4"
     end
 
+    it "can handle corner cases" do
+      @tracker.add_version("text", 1)
+      @tracker.add_version("", 2)
+      @tracker.segments.count.should == 1
+      @tracker.segments[0].type.should == TrackChanges::Segment::DELETE
+      @tracker.segments[0].length.should == 4
+      @tracker.to_s.should == "DELETE:text:2"
+    end
+
+    it "can handle corner cases" do
+      @tracker.add_version("", 1)
+      @tracker.add_version("text", 2)
+      @tracker.segments.count.should == 1
+      @tracker.segments[0].type.should == TrackChanges::Segment::INSERT
+      @tracker.segments[0].length.should == 4
+      @tracker.to_s.should == "INSERT:text:2"
+    end
+
+    it "can handle corner cases" do
+      @tracker.add_version("text", 1)
+      @tracker.add_version("body", 2)
+      @tracker.segments.count.should == 2
+      @tracker.segments[0].type.should == TrackChanges::Segment::DELETE
+      @tracker.segments[0].length.should == 4
+      @tracker.segments[1].type.should == TrackChanges::Segment::INSERT
+      @tracker.segments[1].length.should == 4
+      @tracker.to_s.should == "DELETE:text:2,INSERT:body:2"
+    end
+
+  end
+  
+  context "collapses html" do
+    before do
+      @collapser = TrackChanges::CollapseHtml.new
+    end
+    
+    it "can collapse html" do
+      @collapser.collapse("<a>bcd</a>").should == "가bcd각"
+    end
+
+    it "can expand html" do
+      @collapser.expand(@collapser.collapse("<a>bcd</a>")).should == "<a>bcd</a>"
+    end
+    
+    it "html corner cases" do
+      @collapser.collapse("<a>bc<b/>d</a>eded<a></a>").should == "가bc각d갂eded갃간"
+    end
+    
+    
   end
 end
