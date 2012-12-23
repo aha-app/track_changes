@@ -76,16 +76,17 @@ module TrackChanges
       new_segments = []
       segment = @segments.shift
       version_segments.each do |version_segment|
+        # Copy over any previous deletes.
+        while segment and segment.type == Segment::DELETE do
+          new_segments << segment
+          segment = @segments.shift
+        end
+
         if segment.nil?
           new_segments << version_segment
           next
         end
         
-        # Copy over any previous deletes.
-        while segment.type == Segment::DELETE do
-          new_segments << segment
-          segment = @segments.shift
-        end
         
         # Process the new segment.
         if version_segment.type == Segment::SAME
