@@ -24,6 +24,28 @@ module TrackChanges
       @versions << version      
     end
     
+    def to_s
+      text = @versions.last.text
+      s = @segments.collect do |segment|
+        case segment.type
+        when Segment::SAME
+          t = text[0,segment.length]
+          text = text[segment.length,text.length]
+          "SAME:#{t}:#{segment.version.object}"
+        when Segment::DELETE
+          "DELETE:#{segment.deleted_text}:#{segment.version.object}"
+        when Segment::INSERT
+          t = text[0,segment.length]
+          text = text[segment.length,text.length]
+          "INSERT:#{t}:#{segment.version.object}"
+        end
+      end
+      s.collect do |segment|
+        "[#{segment}]"
+      end
+      s.join(",")
+    end
+    
   protected
   
     def accumulate_segments(version)
@@ -39,9 +61,6 @@ module TrackChanges
       # Merge the new segments with the exist set, splitting segments 
       # wherever they overlap and prefering the new segment (since it
       # represents more recent changes).
-#      next_orig_seg = next_segment_with_length(nil)
-      
-      
       new_segments = []
       segment = @segments.shift
       version_segments.each do |version_segment|
@@ -50,16 +69,12 @@ module TrackChanges
           next
         end
         
-        puts "version: #{version_segment.length} #{version_segment.inspect}"
-        puts "segment: #{segment.length}"
-        
         # Copy over any previous deletes.
         while segment.type == Segment::DELETE do
           new_segments << segment
           segment = @segments.shift
         end
         
-    
         # Process the new segment.
         if version_segment.type == Segment::SAME
           if version_segment.length == segment.length
@@ -105,10 +120,12 @@ module TrackChanges
             next
           elsif version_segment.length > segment.length
             puts "DELETE v>s"  
-            # Split the new segment.
-            version_segment.length = version_segment.length - segment.length
             # Accumulate the old segment.
-            new_segments << version_segment
+            len = segment.length
+            new_segments << Segment.new(Segment::DELETE, version_segment.version, len, version_segment.deleted_text[0, segment.length])
+            # Split the new segment.
+            version_segment.deleted_text = version_segment.deleted_text[segment.length, version_segment.length - segment.length]
+            version_segment.length = version_segment.length - segment.length
             segment = @segments.shift
             # Loop again with the new version segment.
             redo
@@ -164,6 +181,7 @@ module TrackChanges
     
     def initialize(type, version, length, deleted_text = nil)
       @type, @version, @length, @deleted_text = type, version, length, deleted_text
+      puts "OBJECT: #{version.object}"
     end
     
   
