@@ -90,13 +90,13 @@ module TrackChanges
         # Process the new segment.
         if version_segment.type == Segment::SAME
           if version_segment.length == segment.length
-            puts "SAME v=s"
+            #puts "SAME v=s"
             # No changes.
             new_segments << segment
             segment = @segments.shift
             next
           elsif version_segment.length < segment.length
-            puts "SAME v<s"
+            #puts "SAME v<s"
             # Split the original segment.
             length_diff = segment.length - version_segment.length
             segment.length = version_segment.length  
@@ -104,7 +104,7 @@ module TrackChanges
             segment = Segment.new(segment.type, segment.version, length_diff)
             next
           elsif version_segment.length > segment.length
-            puts "SAME v>s"
+            #puts "SAME v>s"
             # Split the new segment.
             version_segment.length = version_segment.length - segment.length
             # Accumulate the old segment.
@@ -114,24 +114,24 @@ module TrackChanges
             redo
           end
         elsif version_segment.type == Segment::INSERT
-          puts "INSERT"  
+          #puts "INSERT"  
           new_segments << version_segment
         elsif version_segment.type == Segment::DELETE
           if version_segment.length == segment.length
-            puts "DELETE v=s"  
+            #puts "DELETE v=s"  
             new_segments << version_segment
             # Remove the old segment.
             segment = @segments.shift
             next
           elsif version_segment.length < segment.length
-            puts "DELETE v<s"  
+            #puts "DELETE v<s"  
             # Split the original segment.
             length_diff = segment.length - version_segment.length
             new_segments << version_segment
             segment = Segment.new(segment.type, segment.version, length_diff)
             next
           elsif version_segment.length > segment.length
-            puts "DELETE v>s"  
+            #puts "DELETE v>s"  
             # Accumulate the old segment.
             len = segment.length
             new_segments << Segment.new(Segment::DELETE, version_segment.version, len, version_segment.deleted_text[0, segment.length])
@@ -158,7 +158,7 @@ module TrackChanges
       differ = DiffMatchPatch.new
       diffs = differ.diff_main(from_version.text, to_version.text, false)
       differ.diff_cleanupSemantic(diffs)
-      puts diffs.inspect
+      #puts diffs.inspect
       
       segments = diffs.inject([]) do |result, element|
         if element[0] == :delete
