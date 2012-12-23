@@ -45,6 +45,9 @@ module TrackChanges
       new_segments = []
       segment = @segments.shift
       version_segments.each do |version_segment|
+        puts "version: #{version_segment.length} #{version_segment.inspect}"
+        puts "segment: #{segment.length}"
+        
         # Copy over any previous deletes.
         while segment.type == Segment::DELETE do
           new_segments << segment
@@ -56,31 +59,62 @@ module TrackChanges
         # Process the new segment.
         if version_segment.type == Segment::SAME
           if version_segment.length == segment.length
+            puts "SAME v=s"
+            # No changes.
+            new_segments << segment
+            segment = @segments.shift
+            next
           elsif version_segment.length < segment.length
+            puts "SAME v<s"
+            # Split the original segment.
+            length_diff = segment.length - version_segment.length
+            segment.length = version_segment.length  
+            new_segments << segment
+            segment = Segment.new(segment.type, segment.version, length_diff)
+            next
+          elsif version_segment.length > segment.length
+            puts "SAME v>s"
+            # Split the new segment.
+            version_segment.length = version_segment.length - segment.length
+            # Accumulate the old segment.
+            new_segments << segment
+            segment = @segments.shift
+            # Loop again with the new version segment.
+            redo
           end
         elsif version_segment.type == Segment::INSERT
-          # TODO
+          puts "INSERT"  
+          new_segments << version_segment
         elsif version_segment.type == Segment::DELETE
-          # TODO
-        end
-      end
-    end
-
-    # Find the next segment with non-zero length.
-    def next_segment_with_length(after_segment)
-      found = false
-      @segments.each do |segment|
-        # Find the segment
-        if not found
-          if segment == after_segment
-            found = true
+          if version_segment.length == segment.length
+            puts "DELETE v=s"  
+            new_segments << version_segment
+            # Remove the old segment.
+            segment = @segments.shift
             next
+          elsif version_segment.length < segment.length
+            puts "DELETE v<s"  
+            # Split the original segment.
+            length_diff = segment.length - version_segment.length
+            new_segments << version_segment
+            segment = Segment.new(segment.type, segment.version, length_diff)
+            next
+          elsif version_segment.length > segment.length
+            puts "DELETE v>s"  
+            # Split the new segment.
+            version_segment.length = version_segment.length - segment.length
+            # Accumulate the old segment.
+            new_segments << version_segment
+            segment = @segments.shift
+            # Loop again with the new version segment.
+            redo
           end
-        else
-          return segment if segment.length > 0
         end
       end
-      nil
+      # There should not be any remaining segments
+      raise MalformedSegments.new unless @segments.empty?
+
+      @segments = new_segments
     end
 
     def add_same_segment(version)
@@ -95,7 +129,7 @@ module TrackChanges
       
       segments = diffs.inject([]) do |result, element|
         if element[0] == :delete
-          result << Segment.new(element[0], to_version, 0, element[1])
+          result << Segment.new(element[0], to_version, element[1].length, element[1])
         else
           result << Segment.new(element[0], to_version, element[1].length)
         end
@@ -115,13 +149,14 @@ module TrackChanges
   end
   
   class Segment
-    SAME = :same
+    SAME = :equal
     DELETE = :delete
     INSERT = :insert
     
     attr_reader :version
-    attr_reader :type, :length
-    attr_reader :deleted_text
+    attr_reader :type
+    attr_accessor :length
+    attr_accessor :deleted_text
     
     def initialize(type, version, length, deleted_text = nil)
       @type, @version, @length, @deleted_text = type, version, length, deleted_text
