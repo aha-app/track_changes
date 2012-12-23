@@ -45,6 +45,11 @@ module TrackChanges
       new_segments = []
       segment = @segments.shift
       version_segments.each do |version_segment|
+        if segment.nil?
+          new_segments << version_segment
+          next
+        end
+        
         puts "version: #{version_segment.length} #{version_segment.inspect}"
         puts "segment: #{segment.length}"
         
@@ -54,8 +59,7 @@ module TrackChanges
           segment = @segments.shift
         end
         
-        raise MalformedSegments.new if segment.nil?
-
+    
         # Process the new segment.
         if version_segment.type == Segment::SAME
           if version_segment.length == segment.length

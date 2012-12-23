@@ -18,5 +18,5 @@ Gem::Specification.new do |s|
   s.add_dependency 'diff_match_patch'
   
   s.add_development_dependency "rspec"
-  s.add_development_dependency 'simplecov'
+  s.add_development_dependency 'simplecov', '~> 0.4'
 end

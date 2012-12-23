@@ -28,5 +28,5 @@ PLATFORMS
 
 DEPENDENCIES
   rspec
-  simplecov
+  simplecov (~> 0.4)
   track_changes!
