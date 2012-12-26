@@ -19,7 +19,7 @@ module TrackChanges
     # Replace HTML tags and return a string.
     #
     def collapse(html)
-      html.gsub(/<[^>]*>|<[^>]*\/>|<\/[^>]*>/) do |tag|
+      html.gsub(/<[^>]*>|<[^>]*\/>|<\/[^>]*>|&[^;]+;/) do |tag|
         push(tag)
       end
     end

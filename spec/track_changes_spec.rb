@@ -150,6 +150,13 @@ describe TrackChanges do
       @collapser.collapse("<a>bc<b/>d</a>eded<a></a>").should == "가bc각d갂eded갃간"
     end
     
+    it "can collapse html entities" do
+      @collapser.collapse("<a>bc&nbsp;d</a>").should == "가bc각d갂"
+    end
     
+    it "can handle html entities" do
+      @collapser.collapse("<a>bc&nbsp;d</a>").should == "가bc각d갂"
+      @collapser.expand(@collapser.collapse("<a>bc&nbsp;d</a>")).should == "<a>bc&nbsp;d</a>"
+    end
   end
 end

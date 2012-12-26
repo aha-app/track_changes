@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    track_changes (1.0.0)
+    track_changes (1.0.1)
       diff_match_patch
 
 GEM
