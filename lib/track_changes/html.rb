@@ -11,6 +11,7 @@ module TrackChanges
   class CollapseHtml
     
     def initialize
+      @chars = {}
       @tags = {}
       @currentHash = 44032; # Hangul Syllables
     end
@@ -29,7 +30,7 @@ module TrackChanges
     #
     def expand(text)
       html = text
-      @tags.each do |char, tag|
+      @chars.each do |char, tag|
         html.gsub!(char, tag)
       end
       html
@@ -38,10 +39,15 @@ module TrackChanges
   protected
   
     def push(tag)
-      char = [@currentHash].pack('U*')
-      @tags[char] = tag
-      @currentHash += 1
-      char
+      if @tags[tag]
+        @tags[tag]
+      else
+        char = [@currentHash].pack('U*')
+        @tags[tag] = char
+        @chars[char] = tag
+        @currentHash += 1
+        char
+      end
     end
     
   end

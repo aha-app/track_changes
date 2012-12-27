@@ -147,7 +147,7 @@ describe TrackChanges do
     end
     
     it "html corner cases" do
-      @collapser.collapse("<a>bc<b/>d</a>eded<a></a>").should == "가bc각d갂eded갃간"
+      @collapser.collapse("<a>bc<b/>d</a>eded<a></a>").should == "가bc각d갂eded가갂"
     end
     
     it "can collapse html entities" do
@@ -158,5 +158,27 @@ describe TrackChanges do
       @collapser.collapse("<a>bc&nbsp;d</a>").should == "가bc각d갂"
       @collapser.expand(@collapser.collapse("<a>bc&nbsp;d</a>")).should == "<a>bc&nbsp;d</a>"
     end
+    
+    it "collapses same tag to same value" do
+      @collapser.collapse("<a>").should == "가"
+      @collapser.collapse("<a>").should == "가"
+    end
+  end
+  
+  context "live bugs" do
+  
+    it "repeats delete" do
+      tracker = TrackChanges::Tracker.new
+      tracker.add_version("For UI performance testing\\<br><ol><li>fgdsfgfsdg</li><li>sdfgsdfg</li></ol><ul><li>fdsgfdg</li><li>dfsg</li><li>fdsg</li><li>fd</li><li>d<br></li></ul>", 1)
+      tracker.add_version("For UI performance testing\\<br><ol><li>fgdsfgfsdg</li><li>sdfgsdfg</li></ol><ul><li>fdsgfdg</li><li>dfsg</li><li>fdsg</li><li>fd</li><li>e<br></li></ul>", 2)
+      tracker.to_s.should == "SAME:For UI performance testing\\<br><ol><li>fgdsfgfsdg</li><li>sdfgsdfg</li></ol><ul><li>fdsgfdg</li><li>dfsg</li><li>fdsg</li><li>fd</li><li>:1,DELETE:d:2,INSERT:e:2,SAME:<br></li></ul>:1"
+
+      tracker = TrackChanges::Tracker.new
+      collapser = TrackChanges::CollapseHtml.new
+      tracker.add_version(collapser.collapse("For UI performance testing\\<br><ol><li>fgdsfgfsdg</li><li>sdfgsdfg</li></ol><ul><li>fdsgfdg</li><li>dfsg</li><li>fdsg</li><li>fd</li><li>d<br></li></ul>"), 1)
+      tracker.add_version(collapser.collapse("For UI performance testing\\<br><ol><li>fgdsfgfsdg</li><li>sdfgsdfg</li></ol><ul><li>fdsgfdg</li><li>dfsg</li><li>fdsg</li><li>fd</li><li>e<br></li></ul>"), 2)
+      collapser.expand(tracker.to_s).should == "SAME:For UI performance testing\\<br><ol><li>fgdsfgfsdg</li><li>sdfgsdfg</li></ol><ul><li>fdsgfdg</li><li>dfsg</li><li>fdsg</li><li>fd</li><li>:1,DELETE:d:2,INSERT:e:2,SAME:<br></li></ul>:1"
+    end
+    
   end
 end
