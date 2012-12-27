@@ -16,6 +16,7 @@ module TrackChanges
     end
     
     def add_version(text, object = nil)
+      #puts "Adding: #{text}"
       version = Version.new(text, object)
       accumulate_segments(version)
       @versions << version      
@@ -70,15 +71,24 @@ module TrackChanges
       # Create segments based on diff from previous version.
       version_segments = segments_from_diff(versions.last, version)
       
+      #puts "OLD: #{@segments.inspect}"
+      #puts "NEW: #{version_segments.inspect}"
+      
       # Merge the new segments with the exist set, splitting segments 
       # wherever they overlap and prefering the new segment (since it
       # represents more recent changes).
       new_segments = []
       segment = @segments.shift
       version_segments.each do |version_segment|
+        
         # Copy over any previous deletes.
         while segment and segment.type == Segment::DELETE do
           new_segments << segment
+          segment = @segments.shift
+        end
+        
+        # Remove any empty segments.
+        while segment and segment.type == Segment::SAME and segment.length == 0 do
           segment = @segments.shift
         end
 
@@ -145,9 +155,11 @@ module TrackChanges
           end
         end
       end
-      # There should not be any remaining segments
-      raise MalformedSegments.new unless @segments.empty?
-
+      
+      # Include any remaining old segments.
+      new_segments << segment if segment
+      new_segments.concat(@segments)
+        
       @segments = new_segments
     end
 

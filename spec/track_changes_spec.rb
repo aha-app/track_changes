@@ -130,6 +130,15 @@ describe TrackChanges do
       @tracker.segments[1].length.should == 4
       @tracker.to_s.should == "DELETE:text:2,INSERT:body:2"
     end
+    
+    it "can handle text getting shorter" do
+      @tracker.add_version("text a", 1)
+      @tracker.add_version("text ", 2)
+      @tracker.add_version("text", 3)
+      @tracker.add_version("", 4)
+      @tracker.segments.count.should == 3
+      @tracker.to_s.should == "DELETE:text:4,DELETE: :3,DELETE:a:2"
+    end
 
   end
   
